@@ -1,12 +1,11 @@
 import Head from "next/head"
-import { Inter } from "@next/font/google"
-import { useMoralis, useMoralisQuery } from "react-moralis"
+import { useMoralis } from "react-moralis"
 import { Loading } from "@web3uikit/core"
 import NFTBox from "../components/NFTBox"
 import { useState } from "react"
 import UpdateListingModal from "../components/UpdateListingModal"
-
-const inter = Inter({ subsets: ["latin"] })
+import GET_ACTIVE_ITEMS from "../constants/subgraphQueries"
+import { useQuery } from "@apollo/client"
 
 export default function Home() {
     const [showModal, setShowModal] = useState(false)
@@ -15,10 +14,8 @@ export default function Home() {
     const [modalMarketplaceAddress, setModalMarketplaceAddress] = useState("")
 
     const { isWeb3Enabled } = useMoralis()
-    const { data: listedNfts, isFetching: fetchingListedNfts } = useMoralisQuery(
-        "ActiveItem",
-        (query) => query.limit(10).descending("tokenId")
-    )
+
+    const marketplaceAddress = "0x7a1587243C25Ad8026601338e4fAc39ca8df683d"
 
     function ownerCardClick(tokenId: string, nftAddress: string, marketplaceAddress: string) {
         setModalTokenId(tokenId)
@@ -26,6 +23,8 @@ export default function Home() {
         setModalMarketplaceAddress(marketplaceAddress)
         setShowModal(true)
     }
+
+    const { loading, error, data: listedNfts } = useQuery(GET_ACTIVE_ITEMS)
 
     return (
         <>
@@ -39,12 +38,11 @@ export default function Home() {
                 <h1 className="py-4 px-4 font-bold text-2xl">Recently Listed</h1>
                 <div className="flex flex-wrap">
                     {isWeb3Enabled ? (
-                        fetchingListedNfts ? (
+                        loading || !listedNfts ? (
                             <div>Loading</div>
                         ) : (
-                            listedNfts.map((nft) => {
-                                const { nftAddress, tokenId, price, marketplaceAddress, seller } =
-                                    nft.attributes
+                            listedNfts.activeItems.map((nft: any) => {
+                                const { nftAddress, tokenId, price, seller } = nft
                                 return (
                                     <div key={nftAddress + tokenId}>
                                         <NFTBox
